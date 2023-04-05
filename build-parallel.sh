@@ -1,0 +1,1 @@
+gcc -fopenmp -o parallel parallel.c
