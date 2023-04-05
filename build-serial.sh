@@ -1,1 +1,1 @@
-gcc -fopenmp -o serial serial.c
+gcc -o serial serial.c
