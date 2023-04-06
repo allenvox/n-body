@@ -4,7 +4,7 @@
 #include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "omp.h"
+#include <omp.h>
 
 struct particle { float x, y, z; };
 
@@ -18,7 +18,8 @@ double wtime()
 const float G = 6.67e-11;
 void calculate_forces(struct particle *p, struct particle *f, float *m, int n)
 {
-	#pragma omp parallel for
+	#pragma omp for schedule(dynamic, 4) nowait
+	// Циклическое распределение итераций
 	for (int i = 0; i < n - 1; i++)
 	{
 		for (int j = i + 1; j < n; j++)
@@ -26,15 +27,18 @@ void calculate_forces(struct particle *p, struct particle *f, float *m, int n)
 			float dist = sqrtf(powf(p[i].x - p[j].x, 2) + powf(p[i].y - p[j].y, 2) + powf(p[i].z - p[j].z, 2));
 			float mag = (G * m[i] * m[j]) / powf(dist, 2);
 			struct particle dir = {.x = p[j].x - p[i].x, .y = p[j].y - p[i].y, .z = p[j].z - p[i].z};
-			#pragma omp critical
-			{
-				f[i].x += mag * dir.x / dist;
-				f[i].y += mag * dir.y / dist;
-				f[i].z += mag * dir.z / dist;
-				f[j].x -= mag * dir.x / dist;
-				f[j].y -= mag * dir.y / dist;
-				f[j].z -= mag * dir.z / dist;
-			}
+			#pragma omp atomic
+			f[i].x += mag * dir.x / dist;
+			#pragma omp atomic
+			f[i].y += mag * dir.y / dist;
+			#pragma omp atomic
+			f[i].z += mag * dir.z / dist;
+			#pragma omp atomic
+			f[j].x -= mag * dir.x / dist;
+			#pragma omp atomic
+			f[j].y -= mag * dir.y / dist;
+			#pragma omp atomic
+			f[j].z -= mag * dir.z / dist;
 		}
 	}
 }
@@ -55,7 +59,6 @@ void move_particles(struct particle *p, struct particle *f, struct particle *v, 
 		f[i].x = f[i].y = f[i].z = 0;
 	}
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -82,16 +85,19 @@ int main(int argc, char *argv[])
 	tinit += wtime();
 	double dt = 1e-5;
 	for (double t = 0; t <= 1; t += dt)
-	{ // Цикл по времени (модельному)
+	{
 		tforces -= wtime();
-		calculate_forces(p, f, m, n); // Вычисление сил - O(N^2)
+		calculate_forces(p, f, m, n);
 		tforces += wtime();
 		tmove -= wtime();
-		move_particles(p, f, v, m, n, dt); // Перемещение тел O(N)
+		move_particles(p, f, v, m, n, dt);
 		tmove += wtime();
+		// Цикл по времени (модельному)
+		// Вычисление сил – O(N^2)
+		// Перемещение тел O(N)
 	}
 	ttotal = wtime() - ttotal;
-	printf("# nbody (n = %d)\n", n);
+	printf("# NBody (n=%d)\n", n);
 	printf("# Elapsed time (sec): ttotal %.6f, tinit %.6f, tforces %.6f, tmove %.6f\n", ttotal, tinit, tforces, tmove);
 	if (filename)
 	{
