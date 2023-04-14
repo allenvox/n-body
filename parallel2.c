@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 		// Перемещение тел O(N)
 	}
 	ttotal = wtime() - ttotal;
-	printf("# NBody (n=%d)\n", n);
+	printf("# nbody (n = %d)\n", n);
 	printf("# Elapsed time (sec): ttotal %.6f, tinit %.6f, tforces %.6f, tmove %.6f\n", ttotal, tinit, tforces, tmove);
 	if (filename)
 	{
