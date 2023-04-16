@@ -62,7 +62,9 @@ int main(int argc, char *argv[])
 	double ttotal, tinit = 0, tforces = 0, tmove = 0;
 	ttotal = wtime();
 	int n = (argc > 1) ? atoi(argv[1]) : 10;
-	char *filename = (argc > 2) ? argv[2] : NULL;
+	int threads = (argc > 2) ? atoi(argv[2]) : 4;
+	omp_set_num_threads(threads);
+	char *filename = (argc > 3) ? argv[3] : NULL;
 	tinit = -wtime();
 	struct particle *p = malloc(sizeof(*p) * n);
 	struct particle *f = malloc(sizeof(*f) * n);
