@@ -62,7 +62,7 @@ void move_particles(struct particle *p, struct particle *f, struct particle *v, 
 
 int main(int argc, char *argv[])
 {
-	double ttotal, tinit = 0, tforces = 0, tmove = 0;
+	double ttotal, tinit = 0;
 	ttotal = wtime();
 	int n = (argc > 1) ? atoi(argv[1]) : 10;
 	int threads = (argc > 2) ? atoi(argv[2]) : 4;
@@ -86,18 +86,17 @@ int main(int argc, char *argv[])
 	}
 	tinit += wtime();
 	double dt = 1e-5;
-	for (double t = 0; t <= 1; t += dt)
+	#pragma omp parallel
 	{
-		tforces -= wtime();
-		calculate_forces(p, f, m, n);
-		tforces += wtime();
-		tmove -= wtime();
-		move_particles(p, f, v, m, n, dt);
-		tmove += wtime();
+		for (double t = 0; t <= 1; t += dt)
+		{
+			calculate_forces(p, f, m, n);
+			move_particles(p, f, v, m, n, dt);
+		}
 	}
 	ttotal = wtime() - ttotal;
 	printf("# nbody (n = %d)\n", n);
-	printf("# Elapsed time (sec): ttotal %.6f, tinit %.6f, tforces %.6f, tmove %.6f\n", ttotal, tinit, tforces, tmove);
+	printf("# Elapsed time (sec): ttotal %.6f, tinit %.6f\n", ttotal, tinit);
 	if (filename)
 	{
 		FILE *fout = fopen(filename, "w");
